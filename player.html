@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>播放器组件</title>
+    <style>
+        h1,
+        h2 {
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -250px 0 0 -250px;
+            width: 500px;
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 100px #aaa;
+        }
+
+        .album-cover {
+            z-index: 100;
+            height: 52%;
+            background-color: #ccc;
+            background: url(./album_cover.jpg) no-repeat center/cover;
+            border-radius: 14px 14px 0 0;
+
+        }
+
+        .controller {
+            position: relative;
+            top: -1.5%;
+            z-index: 200;
+            height: 50%;
+        }
+
+        .progress-bar {
+
+            position: absolute;
+            top: -8px;
+            width: 100%;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+
+        }
+
+        .progress-bar-slider {
+            position: absolute;
+            top: -1.5px;
+            left: -9px;
+            height: 18px;
+            width: 18px;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ccc;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .progress-bar-past {
+            margin-right: -9px;
+            height: 16px;
+            width: 0px;
+            background: #ddd
+        }
+
+
+        .song-info {
+            user-select: none;
+        }
+
+        .song-name {
+            position: absolute;
+            top: 30px;
+            left: 48px;
+            font-size: 24px;
+        }
+
+        .artist-name {
+            position: absolute;
+            top: 68px;
+            left: 48px;
+            color: #ccc;
+            font-size: 12px;
+        }
+
+        .control-btn {
+            position: absolute;
+            left: 50%;
+            margin-left: -73px;
+            bottom: 35px;
+            line-height: 73px;
+        }
+
+        .play {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(#ddd, #fff);
+        }
+
+
+        .play-btn {
+            position: absolute;
+            top: 9px;
+            left: 9px;
+            height: 62px;
+            width: 62px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            line-height: 56px;
+            cursor: pointer;
+        }
+
+        .play-btn:active {
+            background: radial-gradient(#fff 0%, #ddd 90%);
+        }
+
+        .play-icon {
+            margin-left: 21px;
+        }
+
+        .prev {
+            float: left;
+            margin-right: 13px;
+            cursor: pointer;
+        }
+
+        .play {
+            float: left;
+        }
+
+        .next {
+            float: left;
+            margin-left: 13px;
+            cursor: pointer;
+        }
+
+
+
+
+        .icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.15em;
+            fill: currentColor;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://at.alicdn.com/t/font_329588_vdi7b1u6v8k.js"></script>
+
+    <div id="playerContainer" class="container">
+        <div class="album-cover"></div>
+        <div class="controller">
+            <div id="progressBar" class="progress-bar">
+                <div id="progressBarPast" class="progress-bar-past"></div>
+                <span id="progressBarSlider" class="progress-bar-slider"></span>
+            </div>
+            <div class="song-info">
+                <h1 class="song-name">I Don't Wanna Live Forever</h1>
+                <h2 class="artist-name">Taylor Swift</h2>
+            </div>
+            <div class="control-btn">
+                <div id="prevSong" class="prev">
+                    <svg class="icon" aria-hidden="false">
+                        <use xlink:href="#icon-last"></use>
+                    </svg> </div>
+                <div id="playBtn" class="play">
+                    <div class="play-bg"></div>
+                    <div class="play-btn">
+                        <svg class="icon play-icon" aria-hidden="false">
+                            <use id="stateIcon" xlink:href="#icon-play"></use>
+                        </svg>
+                    </div>
+                </div>
+                <div id="nextSong" class="next">
+                    <svg class="icon" aria-hidden="false">
+                        <use xlink:href="#icon-next"></use>
+                    </svg>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        //问题：
+        //1、当事件多了以后 该怎么写 是都写在一起还是个别的分开写在init里调用
+        //2、给id命名的时候是否可以简写比如 progressBar 简写成 bar progressBarPast 简写成 barPast
+        //3、已经有对象属性 this.XXX 了，需要再在写方法的时候 赋值给局部变量 _XXX 吗？ 还是都是用 this.XXX 来使用
+
+        class Player {
+            constructor(progressBarId, sliderId, barPastId) {
+                this.audioObj = null;
+                this.currentSongSrc = ""
+                this.progressBar = this.$(progressBarId)
+                this.slider = this.$(sliderId)   //this.$('progressBarSlider')
+                this.barPast = this.$(barPastId)  //this.$('progressBarPast');
+                this.currentListIndex = 0 //当前歌曲在播放列表里的位置
+                this.init()
+            }
+            init() {
+            }
+
+            $(id) {
+                return document.getElementById(id)
+            }
+
+            //创建或修改当前播放src地址：
+            createOrChangeSrc(currentSongSrc) {
+                //问题：this.audioObj写了很多遍 
+                if (this.audioObj === null) {
+                    this.audioObj = new Audio(currentSongSrc)
+                    this.moveSlider();
+                    this.clickProgressBar()
+                    this.updateProgressBar()
+                    this.addEvent()
+                } else {
+                    this.audioObj.src = currentSongSrc
+                }
+
+
+            }
+
+            //获取元素到网页最左侧距离：
+            getElementLeft(element) {
+                var actualLeft = element.offsetLeft;
+                var current = element.offsetParent;
+
+                while (current !== null) {
+                    actualLeft += current.offsetLeft;
+                    current = current.offsetParent;
+                }
+                return actualLeft;
+            }
+
+            //根据播放时间更新进度条长度：
+            updateProgressBar() {
+                let _this = this
+                this.audioObj.ontimeupdate = function () {
+                    _this.barPast.style.width = _this.progressBar.offsetWidth * this.currentTime / this.duration + 'px'
+                    _this.updateSliderPosition()
+                }
+            }
+
+            //根据进度条长度更新滑块位置：
+            updateSliderPosition() {
+                this.slider.style.left = this.barPast.offsetWidth - 9 + 'px';
+            }
+
+            //点击进度条选择进度：
+            clickProgressBar() {
+                let _this = this
+                this.progressBar.onclick = function (e) {
+                    _this.audioObj.currentTime = (e.clientX - _this.getElementLeft(this) )* _this.audioObj.duration / this.offsetWidth
+                    _this.audioObj.play()
+                    _this.$('stateIcon').setAttribute('xlink:href', '#icon-pause2')
+
+                }
+            }
+
+            //移动滑块事件监听：
+            moveSlider() {
+                this.slider.onmousedown = (e) => {
+                    e.preventDefault()
+                    document.onmousemove = (e) => {
+                        this.audioObj.pause()
+                        this.barPast.style.width = e.clientX - this.getElementLeft(this.progressBar) + 'px';
+                        this.updateSliderPosition()
+                        this.audioObj.currentTime = this.barPast.offsetWidth * this.audioObj.duration / this.progressBar.offsetWidth
+
+                        if (this.slider.offsetLeft < -9) {
+                            this.barPast.style.width = 0;
+                            this.updateSliderPosition()
+                        }
+
+                        else if (this.barPast.offsetWidth >= this.progressBar.offsetWidth) {
+                            this.barPast.style.width = this.progressBar.offsetWidth + 'px';
+                            this.updateSliderPosition()
+                            this.audioObj.pause()
+                        }
+
+                        this.$('stateIcon').setAttribute('xlink:href', '#icon-play')
+
+                        document.onmouseup = (e) => {
+                            document.onmousemove = null
+                            this.audioObj.play()
+                            this.$('stateIcon').setAttribute('xlink:href', '#icon-pause2')
+
+                        }
+                    }
+                }
+            }
+
+            addEvent() {
+
+                //播放暂停按钮点击事件：
+                this.$('playBtn').addEventListener('click', (e) => {
+                    document.onmouseup = null;
+                    e.preventDefault()
+                    if (this.audioObj.paused === true) {
+                        console.log(this.audioObj.paused)
+                        this.audioObj.play()
+                        this.updateProgressBar()
+                        this.$('stateIcon').setAttribute('xlink:href', '#icon-pause2')
+                    }
+                    else if (this.audioObj.paused === false) {
+                        console.log(this.audioObj.paused)
+                        this.audioObj.pause()
+                        this.$('stateIcon').setAttribute('xlink:href', '#icon-play')
+                    }
+                }, false)
+
+
+                //下一首歌按钮点击事件：
+                this.$('nextSong').onclick = () => {
+                    this.createOrChangeSrc('./Say My Name.mp3')
+                    this.audioObj.play()
+                    this.updateProgressBar()
+                }
+
+
+                //上一首歌按钮点击事件：
+                this.$('prevSong').onclick = () => {
+                    this.createOrChangeSrc('./Say My Name.mp3')
+                    this.audioObj.play()
+                    this.updateProgressBar()
+                }
+            }
+
+
+
+        }
+        window.onload = function () {
+            var player = new Player('progressBar', 'progressBarSlider', 'progressBarPast')
+            player.createOrChangeSrc(`./ZAYN 、Taylor Swift - I Don't Wanna Live Forever.mp3`)
+        }
+    </script>
+</body>
+
+</html>
